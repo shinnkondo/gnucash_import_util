@@ -3,18 +3,18 @@ import piecash
 
 from gnucash_csv_importer.csvtransrator import CsvTransactionsReader
 from gnucash_csv_importer.account import Account
-from gnucash_csv_importer.mybook import PersonalBook
+from gnucash_csv_importer.personalbook import PersonalBook
 # DI like
 
 class Import2Book:
 
-    def __init__(self, csvTransactionsReader: CsvTransactionsReader, mybook: PersonalBook):
+    def __init__(self, csvTransactionsReader: CsvTransactionsReader, personalbook: PersonalBook):
         self.csvTransactionsReader = csvTransactionsReader
-        self.mybook = mybook
+        self.persobalbook = personalbook
 
     def import_transactions(self, book_path, csv_path, dry=False, verborse=True):
         with piecash.open_book(book_path, readonly=False) as book:
-            accMap = self.mybook.generate_account_map(book)
+            accMap = self.persobalbook.generate_account_map(book)
             with self.csvTransactionsReader.open(csv_path) as (tr_candidates, receiving_account):
                 transactions = self.execute_transactions(receiving_account, accMap, tr_candidates)
             if verborse:

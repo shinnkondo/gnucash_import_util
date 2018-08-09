@@ -2,8 +2,8 @@ import datetime
 
 from typing import List
 from gnucash_csv_importer.common import PartialTransactionInfo, TransactionInfo
-from gnucash_csv_importer.account import Account
-from gnucash_csv_importer.parser.parser import Parser
+from gnucash_csv_importer.personal.myaccount import MyAccount as Account
+from gnucash_csv_importer.parser import Parser
 
 
 class SuicaParser(Parser):

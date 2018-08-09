@@ -14,7 +14,7 @@ class Parser:
         raise NotImplementedError
 
     def choose_giving_account(self, info: PartialTransactionInfo) -> Account:
-        return Account.UNKNOWN
+        return NotImplementedError
 
     def extract_transaction_info(self, row):
         """The interface method to be used"""

@@ -1,9 +1,6 @@
 import piecash
-from gnucash_csv_importer.account import Account
-
-class PersonalBook:
-    def generate_account_map(self, book: piecash.Book):
-        raise NotImplementedError()
+from gnucash_csv_importer.personal.myaccount import MyAccount as Account
+from gnucash_csv_importer.personalbook import PersonalBook
 
 class MyBook(PersonalBook):
     def generate_account_map(self, book: piecash.Book):
