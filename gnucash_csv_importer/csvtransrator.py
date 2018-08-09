@@ -2,12 +2,11 @@
 import csv
 from typing import List
 from gnucash_csv_importer.parser import Parser
-from gnucash_csv_importer.suicaparser import SuicaParser
 
-# DI like
-parser_candidates = [SuicaParser()]
 
-class CsvTransrator():
+
+
+class CsvTransrator:
     def __init__(self, parser_candidates: List[Parser]):
         self.parser_candidates = parser_candidates
 
@@ -29,14 +28,19 @@ class CsvTransrator():
             raise SystemError("Found more than one matching parser for csv with the following line:\n    ", first_line)
         return parsers[0]
 
-class CsvTransactionsReader():
 
-    def __init__(self, csv_path: str):
+class CsvTransactionsReader:
+
+    def __init__(self, translator: CsvTransrator):
+        self.translator = translator
+        
+    def open(self, csv_path: str):
         self.csv_path = csv_path
+        return self
 
     def __enter__(self):
         self.f = open(self.csv_path, 'r', newline='')
-        t = CsvTransrator(parser_candidates)
+        t = self.translator
 
         return (t.csv2transaction_info(self.f), t.parser.receiving_account)
 

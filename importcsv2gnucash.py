@@ -1,5 +1,5 @@
 import argparse
-from gnucash_csv_importer.import2book import import_transactions
+from gnucash_csv_importer.configure import import2book
 
 if __name__ == '__main__':
 
@@ -10,4 +10,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print("Imporing ", args.csv_path)
-    import_transactions(args.book_path, args.csv_path, dry=args.dry)
+    import2book.import_transactions(args.book_path, args.csv_path, dry=args.dry)
