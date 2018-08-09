@@ -4,6 +4,9 @@ from typing import List
 from csvlineparser import Parser
 from suicaparser import SuicaParser
 
+# DI like
+parser_candidates = [SuicaParser()]
+
 class CsvTransrator():
     def __init__(self, parser_candidates: List[Parser]):
         self.parser_candidates = parser_candidates
@@ -33,7 +36,7 @@ class CsvTransactionsReader():
 
     def __enter__(self):
         self.f = open(self.csv_path, 'r', newline='')
-        t = CsvTransrator([SuicaParser()])
+        t = CsvTransrator(parser_candidates)
 
         return (t.csv2transaction_info(self.f), t.parser.receiving_account)
 
