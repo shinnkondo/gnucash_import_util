@@ -34,7 +34,7 @@ class CsvTransactionReader:
         else:
             if deposit  < -1000:
                 account = Account.UNKNOWN
-            else deposit < -200:
+            elif deposit < -200:
                 account = Account.MEALS
             else:
                 account = Account.SNACK
@@ -61,8 +61,8 @@ def import_transactions(book_path, csv_path, dry=False, verborse=True):
         accMap = {
             Account.CARD: book.accounts(name="JR related"),
             Account.TRANSPORTATION: book.accounts(name="Public Transportation"),
-            Account.MEALS: book.accounts(name="Food").children(name="Meals")
-            Account.SNACK: book.accounts(name="Food").children(name="Snack")
+            Account.MEALS: book.accounts(name="Food").children(name="Meals"),
+            Account.SNACK: book.accounts(name="Food").children(name="Snack"),
             Account.UNKNOWN: book.accounts(name="Imbalance-JPY")
             }
         suica = book.accounts(name="Suica")
@@ -96,5 +96,6 @@ if __name__ == '__main__':
     parser.add_argument('--dry', action='store_true')
     args = parser.parse_args()
 
+    print("Imporing ", args.csv_path)
     import_transactions(args.book_path, args.csv_path, dry=args.dry)
 
