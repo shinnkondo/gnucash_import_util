@@ -6,14 +6,13 @@ import typing
 from typing import List
 import enum
 
-
 class Account(enum.Enum):
     CARD = enum.auto()
     TRANSPORTATION = enum.auto()
     MEALS = enum.auto()
     SNACK = enum.auto()
+    SUICA = enum.auto()
     UNKNOWN = enum.auto()
-
 
 class PartialTransactionInfo(typing.NamedTuple):
     date: datetime.date
@@ -29,18 +28,41 @@ class TransactionInfo(typing.NamedTuple):
     @staticmethod
     def from_partial_transaction_info(info: PartialTransactionInfo, account: Account):
         return TransactionInfo(date=info.date, description=info.description, deposit=info.deposit, account=account)
-        
-class CsvTransrator():
+
+class Parser():
+    line_skip: int
+    receiving_account: Account
+
+    def is_applicable(self, first_line) -> bool:
+        raise NotImplementedError
+
+    def extract_fields(self, row: List[str]) -> PartialTransactionInfo:
+        raise NotImplementedError
+
+    def choose_giving_account(self, info: PartialTransactionInfo) -> Account:
+        return Account.UNKNOWN
+
+    def extract_transaction_info(self, row):
+        """The interface method to be used"""
+        p = self.extract_fields(row)
+        return TransactionInfo(p.date, p.description, p.deposit, self.choose_giving_account(p))
+
+
+class SuicaParser(Parser):
     """Works specifically with CSV generated from an android app'ICカードリーダー'."""
     line_skip: int = 6
+    receiving_account = Account.SUICA
 
-    def __extract_fields(self, row: List[str]):
+    def is_applicable(self, first_line):
+        return 'カードID' in first_line
+
+    def extract_fields(self, row: List[str]):
         date = datetime.datetime.strptime(row[0], '%Y/%m/%d').date()
         desc = ', '.join(filter(lambda x: x != '', row[1:6]))
         deposit = - int(row[7]) if row[7] != '' else int(row[9])
         return PartialTransactionInfo(date, desc, deposit)
 
-    def __choose_giving_account(self, info: PartialTransactionInfo):
+    def choose_giving_account(self, info: PartialTransactionInfo):
         if info.deposit > 0:
             return Account.CARD
         elif any(keyword in info.description for keyword in ('自動改札機', 'バス等車載端末')):
@@ -52,58 +74,46 @@ class CsvTransrator():
                 return Account.MEALS
             else:
                 return Account.SNACK
-
-    def __extract_transaction_info(self, row):
-        p = self.__extract_fields(row)
-        return TransactionInfo.from_partial_transaction_info(p, self.__choose_giving_account(p))
+    
+class CsvTransrator():
+    def __init__(self, parser_candidates: List[Parser]):
+        self.parser_candidates = parser_candidates
 
     def csv2transaction_info(self, f):
         reader = csv.reader(f)
 
+        parser = self.choose_parser(next(reader))
+
         # Skip headers and the first "unknown withdrawal" row
-        for _ in range(self.line_skip):
+        for _ in range(parser.line_skip - 1):
             next(reader)
-        return map(self.__extract_transaction_info, reader)
+        return map(parser.extract_transaction_info, reader)
+    
+    def choose_parser(self, first_line) -> Parser:
+        parsers = list(filter(lambda t: t.is_applicable(first_line), self.parser_candidates))
+        if len(parsers) < 1:
+            raise SystemError("Could not find matching parser for csv with the following line:\n    ", first_line)
+        elif len(parsers) > 1:
+            raise SystemError("Found more than one matching parser for csv with the following line:\n    ", first_line)
+        return parsers[0]
 
 class CsvTransactionsReader():
 
-    
     def __init__(self, csv_path: str):
         self.csv_path = csv_path
 
     def __enter__(self):
         self.f = open(self.csv_path, 'r', newline='')
-        return CsvTransrator().csv2transaction_info(self.f)
+        return CsvTransrator([SuicaParser()]).csv2transaction_info(self.f)
 
     def __exit__(self, type, value, traceback):
         self.f.close()
 
 def import_transactions(book_path, csv_path, dry=False, verborse=True):
     with piecash.open_book(book_path, readonly=False) as book:
-        accMap = {
-            Account.CARD: book.accounts(name="JR related"),
-            Account.TRANSPORTATION: book.accounts(name="Public Transportation"),
-            Account.MEALS: book.accounts(name="Food").children(name="Meals"),
-            Account.SNACK: book.accounts(name="Food").children(name="Snack"),
-            Account.UNKNOWN: book.accounts(name="Imbalance-JPY")
-            }
-        suica = book.accounts(name="Suica")
-        latest_date = suica.splits[-1].transaction.post_date
-        transactions = []
-        count = 1
+        accMap = generate_account_map(book)
         with CsvTransactionsReader(csv_path) as tr_candidates:
-            for info in tr_candidates:
-                # Add only new transactions. Assumptions: new ones come with later dates
-                if  latest_date >= info.date:
-                    continue
-
-                transactions.append(piecash.Transaction(currency=suica.commodity, description=info.description, post_date=info.date, num = str(count),
-                                        splits=[
-                    piecash.Split(account=suica, value=info.deposit),
-                    piecash.Split(account=accMap[info.account], value=-info.deposit),
-                ]))
-                count +=1
-
+            transactions = execute_transactions(accMap[Account.SUICA], accMap, tr_candidates)
         if verborse:
             book.flush()
             for transaction in transactions:
@@ -111,6 +121,34 @@ def import_transactions(book_path, csv_path, dry=False, verborse=True):
         if not dry:
             book.save()
 
+def execute_transactions(receiving_account, accountMap, transaction_candidates):
+    latest_date = receiving_account.splits[-1].transaction.post_date
+    transactions = []
+    count = 1
+    for info in transaction_candidates:
+        # Add only new transactions. Assumptions: new ones come with later dates
+        if  latest_date >= info.date:
+            continue
+
+        transaction = piecash.Transaction(currency=receiving_account.commodity, description=info.description, 
+            post_date=info.date, num = str(count),
+            splits=[
+                piecash.Split(account=receiving_account, value=info.deposit),
+                piecash.Split(account=accountMap[info.account], value=-info.deposit),
+            ])
+        transactions.append(transaction)
+        count +=1
+    return transactions
+
+def generate_account_map(book):
+    return {
+            Account.CARD: book.accounts(name="JR related"),
+            Account.TRANSPORTATION: book.accounts(name="Public Transportation"),
+            Account.MEALS: book.accounts(name="Food").children(name="Meals"),
+            Account.SNACK: book.accounts(name="Food").children(name="Snack"),
+            Account.SUICA: book.accounts(name="Suica"),
+            Account.UNKNOWN: book.accounts(name="Imbalance-JPY")
+        }
 
 
 if __name__ == '__main__':
