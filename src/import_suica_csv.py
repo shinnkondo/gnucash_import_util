@@ -3,7 +3,9 @@ import piecash
 import csv
 import datetime 
 import typing
+from typing import List
 import enum
+
 
 class Account(enum.Enum):
     CARD = enum.auto()
@@ -13,50 +15,70 @@ class Account(enum.Enum):
     UNKNOWN = enum.auto()
 
 
+class PartialTransactionInfo(typing.NamedTuple):
+    date: datetime.date
+    description: str
+    deposit: int
+
 class TransactionInfo(typing.NamedTuple):
     date: datetime.date
     description: str
     deposit: int
     account: Account
-        
-class CsvTransactionReader:
-    """Works specifically with CSV generated from an android app'ICカードリーダー'."""
-    
+
     @staticmethod
-    def __extract_transaction_info(row):
+    def from_partial_transaction_info(info: PartialTransactionInfo, account: Account):
+        return TransactionInfo(date=info.date, description=info.description, deposit=info.deposit, account=account)
+        
+class CsvTransrator():
+    """Works specifically with CSV generated from an android app'ICカードリーダー'."""
+    line_skip: int = 6
+
+    def __extract_fields(self, row: List[str]):
         date = datetime.datetime.strptime(row[0], '%Y/%m/%d').date()
         desc = ', '.join(filter(lambda x: x != '', row[1:6]))
         deposit = - int(row[7]) if row[7] != '' else int(row[9])
-        if deposit > 0:
-            account = Account.CARD
-        elif '自動改札機' in desc or 'バス等車載端末' in desc:
-            account = Account.TRANSPORTATION
+        return PartialTransactionInfo(date, desc, deposit)
+
+    def __choose_giving_account(self, info: PartialTransactionInfo):
+        if info.deposit > 0:
+            return Account.CARD
+        elif any(keyword in info.description for keyword in ('自動改札機', 'バス等車載端末')):
+            return Account.TRANSPORTATION
         else:
-            if deposit  < -1000:
-                account = Account.UNKNOWN
-            elif deposit < -200:
-                account = Account.MEALS
+            if info.deposit  < -1000:
+                return Account.UNKNOWN
+            elif info.deposit < -200:
+                return Account.MEALS
             else:
-                account = Account.SNACK
+                return Account.SNACK
 
-        
-        return TransactionInfo(date, desc, deposit, account)
-        
-    @staticmethod
-    def csv2transaction_info(csv_path):
-        with open(csv_path, 'r', newline='') as f:
-            reader = csv.reader(f)
+    def __extract_transaction_info(self, row):
+        p = self.__extract_fields(row)
+        return TransactionInfo.from_partial_transaction_info(p, self.__choose_giving_account(p))
 
-            # Skip headers and the first "unknown withdrawal" row
-            for _ in range(6):
-                next(reader)
-                
-            # At most 100 rows, so making a list is OK.
-            # Otherwise, it will be closed before used.
-            return list(map(CsvTransactionReader.__extract_transaction_info, reader))
+    def csv2transaction_info(self, f):
+        reader = csv.reader(f)
+
+        # Skip headers and the first "unknown withdrawal" row
+        for _ in range(self.line_skip):
+            next(reader)
+        return map(self.__extract_transaction_info, reader)
+
+class CsvTransactionsReader():
+
+    
+    def __init__(self, csv_path: str):
+        self.csv_path = csv_path
+
+    def __enter__(self):
+        self.f = open(self.csv_path, 'r', newline='')
+        return CsvTransrator().csv2transaction_info(self.f)
+
+    def __exit__(self, type, value, traceback):
+        self.f.close()
 
 def import_transactions(book_path, csv_path, dry=False, verborse=True):
-    tr_candiates = CsvTransactionReader.csv2transaction_info(csv_path)
     with piecash.open_book(book_path, readonly=False) as book:
         accMap = {
             Account.CARD: book.accounts(name="JR related"),
@@ -69,11 +91,14 @@ def import_transactions(book_path, csv_path, dry=False, verborse=True):
         latest_date = suica.splits[-1].transaction.post_date
         transactions = []
         count = 1
-        for info in tr_candiates:
-            # Add only new transactions. Assumptions: new ones come with later dates
-            if  latest_date < info.date:
+        with CsvTransactionsReader(csv_path) as tr_candidates:
+            for info in tr_candidates:
+                # Add only new transactions. Assumptions: new ones come with later dates
+                if  latest_date >= info.date:
+                    continue
+
                 transactions.append(piecash.Transaction(currency=suica.commodity, description=info.description, post_date=info.date, num = str(count),
-                                         splits=[
+                                        splits=[
                     piecash.Split(account=suica, value=info.deposit),
                     piecash.Split(account=accMap[info.account], value=-info.deposit),
                 ]))
