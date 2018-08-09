@@ -3,16 +3,18 @@ import piecash
 
 from gnucash_csv_importer.csvtransrator import CsvTransactionsReader
 from gnucash_csv_importer.account import Account
+from gnucash_csv_importer.mybook import PersonalBook
 # DI like
 
 class Import2Book:
 
-    def __init__(self, csvTransactionsReader: CsvTransactionsReader):
+    def __init__(self, csvTransactionsReader: CsvTransactionsReader, mybook: PersonalBook):
         self.csvTransactionsReader = csvTransactionsReader
+        self.mybook = mybook
 
     def import_transactions(self, book_path, csv_path, dry=False, verborse=True):
         with piecash.open_book(book_path, readonly=False) as book:
-            accMap = generate_account_map(book)
+            accMap = self.mybook.generate_account_map(book)
             with self.csvTransactionsReader.open(csv_path) as (tr_candidates, receiving_account):
                 transactions = self.execute_transactions(receiving_account, accMap, tr_candidates)
             if verborse:
@@ -40,16 +42,3 @@ class Import2Book:
             transactions.append(transaction)
             count +=1
         return transactions
-
-def generate_account_map(book):
-    return {
-            Account.CARD: book.accounts(name="JR related"),
-            Account.TRANSPORTATION: book.accounts(name="Public Transportation"),
-            Account.MEALS: book.accounts(name="Food").children(name="Meals"),
-            Account.SNACK: book.accounts(name="Food").children(name="Snack"),
-            Account.SUICA: book.accounts(name="Suica"),
-            Account.UNKNOWN: book.accounts(name="Imbalance-JPY")
-        }
-
-
-

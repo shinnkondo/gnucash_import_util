@@ -1,10 +1,6 @@
-
 import csv
 from typing import List
-from gnucash_csv_importer.parser import Parser
-
-
-
+from gnucash_csv_importer.parser.parser import Parser
 
 class CsvTransrator:
     def __init__(self, parser_candidates: List[Parser]):
