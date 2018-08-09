@@ -1,7 +1,7 @@
 
 import csv
 from typing import List
-from gnucash_csv_importer.csvlineparser import Parser
+from gnucash_csv_importer.parser import Parser
 from gnucash_csv_importer.suicaparser import SuicaParser
 
 # DI like
