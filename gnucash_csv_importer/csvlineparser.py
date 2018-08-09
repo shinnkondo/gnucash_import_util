@@ -1,7 +1,7 @@
 from typing import List
 
-from common import PartialTransactionInfo, TransactionInfo
-from account import Account
+from gnucash_csv_importer.common import PartialTransactionInfo, TransactionInfo
+from gnucash_csv_importer.account import Account
 
 class Parser:
     line_skip: int

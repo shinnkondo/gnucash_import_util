@@ -1,8 +1,8 @@
 
 import csv
 from typing import List
-from csvlineparser import Parser
-from suicaparser import SuicaParser
+from gnucash_csv_importer.csvlineparser import Parser
+from gnucash_csv_importer.suicaparser import SuicaParser
 
 # DI like
 parser_candidates = [SuicaParser()]

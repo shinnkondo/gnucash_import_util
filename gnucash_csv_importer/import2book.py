@@ -1,8 +1,8 @@
 # coding: utf-8
 import piecash
 
-from csvtransrator import CsvTransactionsReader
-from account import Account
+from gnucash_csv_importer.csvtransrator import CsvTransactionsReader
+from gnucash_csv_importer.account import Account
 
 def import_transactions(book_path, csv_path, dry=False, verborse=True):
     with piecash.open_book(book_path, readonly=False) as book:
@@ -45,14 +45,5 @@ def generate_account_map(book):
             Account.UNKNOWN: book.accounts(name="Imbalance-JPY")
         }
 
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(description='Import transactions to a gnucash book from a csv file.')
-    parser.add_argument('book_path', type=str)
-    parser.add_argument('csv_path', type=str)
-    parser.add_argument('--dry', action='store_true')
-    args = parser.parse_args()
 
-    print("Imporing ", args.csv_path)
-    import_transactions(args.book_path, args.csv_path, dry=args.dry)
 

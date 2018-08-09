@@ -1,6 +1,6 @@
 import typing
 import datetime
-from account import Account
+from gnucash_csv_importer.account import Account
 
 class PartialTransactionInfo(typing.NamedTuple):
     date: datetime.date
