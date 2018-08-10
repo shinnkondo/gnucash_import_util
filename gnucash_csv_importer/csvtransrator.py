@@ -7,12 +7,14 @@ class CsvTransrator:
         self.parser_candidates = parser_candidates
 
     def csv2transaction_info(self, f):
+        p = f.tell()
+        self.parser = self.choose_parser(f.readline())
+        f.seek(p)
+
         reader = csv.reader(f)
 
-        self.parser = self.choose_parser(next(reader))
-
         # Skip headers and the first "unknown withdrawal" row
-        for _ in range(self.parser.line_skip - 1):
+        for _ in range(self.parser.line_skip):
             next(reader)
         return map(self.parser.extract_transaction_info, reader)
     
