@@ -5,7 +5,7 @@ from gnucash_csv_importer.account import Account
 
 class Parser:
     line_skip: int
-    receiving_account: Account
+    debt_account: Account
 
     def is_applicable(self, first_line) -> bool:
         raise NotImplementedError
@@ -13,10 +13,10 @@ class Parser:
     def extract_fields(self, row: List[str]) -> PartialTransactionInfo:
         raise NotImplementedError
 
-    def choose_giving_account(self, info: PartialTransactionInfo) -> Account:
+    def choose_credit_account(self, info: PartialTransactionInfo) -> Account:
         return NotImplementedError
 
     def extract_transaction_info(self, row):
         """The interface method to be used"""
         p = self.extract_fields(row)
-        return TransactionInfo(p.date, p.description, p.deposit, self.choose_giving_account(p))
+        return TransactionInfo(p.date, p.description, p.credit, debt_account=self.debt_account, credit_account=self.choose_credit_account(p))

@@ -1,9 +1,11 @@
 # coding: utf-8
 import piecash
+from typing import Iterator
 
 from gnucash_csv_importer.csvtransrator import CsvTransactionsReader
 from gnucash_csv_importer.account import Account
 from gnucash_csv_importer.personalbook import PersonalBook
+from gnucash_csv_importer.common import TransactionInfo
 # DI like
 
 class Import2Book:
@@ -15,8 +17,8 @@ class Import2Book:
     def import_transactions(self, book_path, csv_path, dry=False, verborse=True):
         with piecash.open_book(book_path, readonly=False) as book:
             accMap = self.persobalbook.generate_account_map(book)
-            with self.csvTransactionsReader.open(csv_path) as (tr_candidates, receiving_account):
-                transactions = self.execute_transactions(receiving_account, accMap, tr_candidates)
+            with self.csvTransactionsReader.open(csv_path) as tr_candidates:
+                transactions = self.execute_transactions(accMap, tr_candidates)
             if verborse:
                 book.flush()
                 for transaction in transactions:
@@ -24,20 +26,21 @@ class Import2Book:
             if not dry:
                 book.save()
 
-    def execute_transactions(self, receiving_account: Account, accountMap, transaction_candidates):
-        latest_date = accountMap[receiving_account].splits[-1].transaction.post_date
+    def execute_transactions(self, accountMap, transaction_candidates: Iterator[TransactionInfo]):
         transactions = []
         count = 1
         for info in transaction_candidates:
+            debt_account: piecash.Account = accountMap[info.debt_account]
+
             # Add only new transactions. Assumptions: new ones come with later dates
-            if  latest_date >= info.date:
+            if  debt_account.splits[-1].transaction.post_date >= info.date:
                 continue
 
-            transaction = piecash.Transaction(currency=accountMap[receiving_account].commodity, description=info.description, 
+            transaction = piecash.Transaction(currency=debt_account.commodity, description=info.description, 
                 post_date=info.date, num = str(count),
                 splits=[
-                    piecash.Split(account=accountMap[receiving_account], value=info.deposit),
-                    piecash.Split(account=accountMap[info.account], value=-info.deposit),
+                    piecash.Split(account=debt_account, value=info.credit),
+                    piecash.Split(account=accountMap[info.credit_account], value=-info.credit),
                 ])
             transactions.append(transaction)
             count +=1

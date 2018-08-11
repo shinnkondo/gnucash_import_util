@@ -40,7 +40,7 @@ class CsvTransactionsReader:
         self.f = open(self.csv_path, 'r', newline='')
         t = self.translator
 
-        return (t.csv2transaction_info(self.f), t.parser.receiving_account)
+        return t.csv2transaction_info(self.f)
 
     def __exit__(self, type, value, traceback):
         self.f.close()
