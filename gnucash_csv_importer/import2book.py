@@ -8,6 +8,7 @@ from gnucash_csv_importer.account import Account
 from gnucash_csv_importer.common import TransactionInfo
 from gnucash_csv_importer.csvtransrator import CsvTransactionsReader
 from gnucash_csv_importer.personalbook import PersonalBook
+from gnucash_csv_importer.reconciler import Reconciler
 
 # DI like
 
@@ -32,15 +33,15 @@ class Import2Book:
     def execute_transactions(self, accountMap, transaction_candidates: Iterator[TransactionInfo]):
         transactions = []
         count = 1
-        latest_dates: Dict[Account, datetime.date] = {}
+
+        reconcilers = {}
+
         for info in transaction_candidates:
             debt_account: piecash.Account = accountMap[info.debt_account]
 
-            # Add only new transactions. Assumptions: new ones come with later dates
-            if not debt_account in latest_dates:
-                latest_dates[debt_account] = debt_account.splits[-1].transaction.post_date
-
-            if latest_dates[debt_account] >= info.date:
+            if not info.debt_account in reconcilers:
+                reconcilers[info.debt_account] = Reconciler(debt_account.splits)
+            if reconcilers[info.debt_account].reconcile(info.date, info.credit):
                 continue
 
             transaction = piecash.Transaction(currency=debt_account.commodity, description=info.description, 
