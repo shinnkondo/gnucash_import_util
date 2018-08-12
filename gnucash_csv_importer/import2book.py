@@ -1,11 +1,14 @@
 # coding: utf-8
-import piecash
-from typing import Iterator
+import datetime
+from typing import Dict, Iterator
 
-from gnucash_csv_importer.csvtransrator import CsvTransactionsReader
+import piecash
+
 from gnucash_csv_importer.account import Account
-from gnucash_csv_importer.personalbook import PersonalBook
 from gnucash_csv_importer.common import TransactionInfo
+from gnucash_csv_importer.csvtransrator import CsvTransactionsReader
+from gnucash_csv_importer.personalbook import PersonalBook
+
 # DI like
 
 class Import2Book:
@@ -15,7 +18,7 @@ class Import2Book:
         self.persobalbook = personalbook
 
     def import_transactions(self, book_path, csv_path, dry=False, verborse=True):
-        with piecash.open_book(book_path, readonly=False) as book:
+        with piecash.open_book(book_path, readonly=dry) as book:
             accMap = self.persobalbook.generate_account_map(book)
             with self.csvTransactionsReader.open(csv_path) as tr_candidates:
                 transactions = self.execute_transactions(accMap, tr_candidates)
@@ -29,11 +32,15 @@ class Import2Book:
     def execute_transactions(self, accountMap, transaction_candidates: Iterator[TransactionInfo]):
         transactions = []
         count = 1
+        latest_dates: Dict[Account, datetime.date] = {}
         for info in transaction_candidates:
             debt_account: piecash.Account = accountMap[info.debt_account]
 
             # Add only new transactions. Assumptions: new ones come with later dates
-            if  debt_account.splits[-1].transaction.post_date >= info.date:
+            if not debt_account in latest_dates:
+                latest_dates[debt_account] = debt_account.splits[-1].transaction.post_date
+
+            if latest_dates[debt_account] >= info.date:
                 continue
 
             transaction = piecash.Transaction(currency=debt_account.commodity, description=info.description, 

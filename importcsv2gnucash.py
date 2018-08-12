@@ -2,6 +2,7 @@ import argparse
 from gnucash_csv_importer.configure import configure
 from gnucash_csv_importer.personal.mybook import MyBook
 from gnucash_csv_importer.personal.suicaparser import SuicaParser
+from gnucash_csv_importer.personal.smbc_card_parser import SmbcCardParser
 
 if __name__ == '__main__':
 
@@ -12,4 +13,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print("Imporing ", args.csv_path)
-    configure([SuicaParser()], MyBook()).import_transactions(args.book_path, args.csv_path, dry=args.dry)
+    configure([SuicaParser(), SmbcCardParser()], MyBook()).import_transactions(args.book_path, args.csv_path, dry=args.dry)
