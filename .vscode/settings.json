@@ -1,8 +1,8 @@
 {
-    "python.pythonPath": "C:\\Users\\sk\\Anaconda2\\envs\\py36\\python.exe",
-    "python.unitTest.nosetestsEnabled": true,
-    "python.unitTest.nosetestArgs": [
+    "python.pythonPath": "C:\\Users\\sk\\Anaconda3\\envs\\py37\\python.exe",
+    "python.testing.nosetestsEnabled": true,
+    "python.testing.nosetestArgs": [
         "tests/"
     ],
-    "python.unitTest.autoTestDiscoverOnSaveEnabled": false
+    "python.testing.autoTestDiscoverOnSaveEnabled": false
 }

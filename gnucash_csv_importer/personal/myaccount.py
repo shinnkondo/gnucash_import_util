@@ -10,4 +10,6 @@ class MyAccount(Account):
     SUICA = auto()
     SMBC_CARD_AMAZON = auto()
     SMBC_CARD_OTHERS = auto()
+    LINE_PAY = auto()
+    JP_BANK = auto()
     UNKNOWN = auto()

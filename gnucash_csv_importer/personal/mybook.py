@@ -12,6 +12,8 @@ class MyBook(PersonalBook):
                 Account.SUICA: book.accounts(name="Suica"),
                 Account.SMBC_CARD_AMAZON: book.accounts(name="Amazon Mastercard Classic").children(name="Amazon Related"),
                 Account.SMBC_CARD_OTHERS: book.accounts(name="Amazon Mastercard Classic").children(name="Others"),
+                Account.LINE_PAY: book.accounts(name="Line Pay"),
+                Account.JP_BANK: book.accounts(name='Checking Account'),
                 Account.UNKNOWN: book.accounts(name="Imbalance-JPY")
             }
         if len(set(m) ^ set(Account.__members__.values())) != 0:

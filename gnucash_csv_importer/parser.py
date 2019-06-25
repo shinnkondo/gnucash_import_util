@@ -5,6 +5,7 @@ from gnucash_csv_importer.account import Account
 
 class Parser:
     line_skip: int
+    delimiter: str = ','
     debt_account: Account
 
     def is_applicable(self, first_line) -> bool:

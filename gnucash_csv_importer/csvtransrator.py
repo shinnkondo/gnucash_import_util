@@ -11,7 +11,7 @@ class CsvTransrator:
         self.parser = self.choose_parser(f.readline())
         f.seek(p)
 
-        reader = csv.reader(f)
+        reader = csv.reader(f, delimiter=self.parser.delimiter)
 
         # Skip headers and the first "unknown withdrawal" row
         for _ in range(self.parser.line_skip):
