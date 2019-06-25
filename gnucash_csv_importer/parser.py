@@ -20,3 +20,6 @@ class Parser:
         """The interface method to be used"""
         p = self.extract_fields(row)
         return TransactionInfo(p.date, p.description, p.credit, debt_account=self.debt_account, credit_account=self.choose_credit_account(p))
+
+    def is_row_vaild(self, row) -> bool:
+        return True

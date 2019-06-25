@@ -16,7 +16,7 @@ class CsvTransrator:
         # Skip headers and the first "unknown withdrawal" row
         for _ in range(self.parser.line_skip):
             next(reader)
-        return map(self.parser.extract_transaction_info, reader)
+        return map(self.parser.extract_transaction_info, [row for row in reader if self.parser.is_row_vaild(row)])
     
     def choose_parser(self, first_line) -> Parser:
         parsers = list(filter(lambda t: t.is_applicable(first_line), self.parser_candidates))
