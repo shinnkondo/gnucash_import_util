@@ -14,5 +14,5 @@ if __name__ == '__main__':
     parser.add_argument('--dry', action='store_true')
     args = parser.parse_args()
 
-    print("Imporing ", args.csv_path)
+    print("Importing ", args.csv_path)
     configure([SuicaParser(), SmbcCardParser(), SmbcCardParserFixed(), LinePayParser()], MyBook()).import_transactions(args.book_path, args.csv_path, dry=args.dry)

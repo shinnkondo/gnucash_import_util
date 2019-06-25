@@ -3,10 +3,10 @@ import datetime
 from typing import List
 from gnucash_csv_importer.common import PartialTransactionInfo, TransactionInfo
 from gnucash_csv_importer.personal.myaccount import MyAccount as Account
-from gnucash_csv_importer.parser import Parser
+from gnucash_csv_importer.parser import CSVParser
 
 
-class SuicaParser(Parser):
+class SuicaParser(CSVParser):
     """Works specifically with CSV generated from an android app'ICカードリーダー'."""
     line_skip: int = 6
     debt_account = Account.SUICA

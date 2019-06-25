@@ -6,7 +6,7 @@ import piecash
 
 from gnucash_csv_importer.account import Account
 from gnucash_csv_importer.common import TransactionInfo
-from gnucash_csv_importer.csvtransrator import CsvTransactionsReader
+from gnucash_csv_importer.transactions_reader import TransactionsReader
 from gnucash_csv_importer.personalbook import PersonalBook
 from gnucash_csv_importer.reconciler import Reconciler
 
@@ -14,14 +14,14 @@ from gnucash_csv_importer.reconciler import Reconciler
 
 class Import2Book:
 
-    def __init__(self, csvTransactionsReader: CsvTransactionsReader, personalbook: PersonalBook):
-        self.csvTransactionsReader = csvTransactionsReader
+    def __init__(self, transactionsReader: TransactionsReader, personalbook: PersonalBook):
+        self.transactionsReader = transactionsReader
         self.persobalbook = personalbook
 
     def import_transactions(self, book_path, csv_path, dry=False, verborse=True):
         with piecash.open_book(book_path, readonly=dry) as book:
             accMap = self.persobalbook.generate_account_map(book)
-            with self.csvTransactionsReader.open(csv_path) as tr_candidates:
+            with self.transactionsReader.open(csv_path) as tr_candidates:
                 transactions = self.execute_transactions(accMap, tr_candidates)
             if verborse:
                 book.flush()

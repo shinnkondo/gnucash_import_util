@@ -3,9 +3,13 @@ from typing import List
 from gnucash_csv_importer.common import PartialTransactionInfo, TransactionInfo
 from gnucash_csv_importer.account import Account
 
+
 class Parser:
+    def is_applicable(self, first_line) -> bool:
+        raise NotImplementedError
+
+class CSVParser(Parser):
     line_skip: int
-    delimiter: str = ','
     debt_account: Account
 
     def is_applicable(self, first_line) -> bool:
